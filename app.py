@@ -18,7 +18,7 @@ from modules.ui import hero, kpi_card, scope_badge, section_title, success_toast
 st.set_page_config(page_title="VitalGuard MCP", page_icon="🏥", layout="wide")
 
 # ---- Load CSS ----
-css_path = Path(__file__).resolve().parents[1] / "assets" / "css" / "theme.css"
+css_path = Path(__file__).resolve().parents[1] / "assets" / "theme.css"
 st.markdown(f"<style>{css_path.read_text()}</style>", unsafe_allow_html=True)
 
 # ---- Session State ----
