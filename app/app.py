@@ -61,10 +61,17 @@ with tabs[0]:
     with colR:
         cols = st.columns(4)
         v = patient["vitals"]
-        kpi_card("❤️ Heart Rate", f"{v['heart_rate']} bpm", cols[0])
-        kpi_card("🫁 SpO₂", f"{v['spo2']} %", cols[1])
-        kpi_card("🌡️ Temp", f"{v['temperature']} °C", cols[2])
-        kpi_card("🩺 BP", f"{v['blood_pressure']}", cols[3])
+
+        # >>> Added: conditional color alerts on KPI cards
+        hr_color = "🔴" if v["heart_rate"] > 120 else "🟢"
+        spo2_color = "🔴" if v["spo2"] < 95 else "🟢"
+        temp_color = "🔴" if v["temperature"] > 38 else "🟢"
+        bp_color = "🟢"  # (could extend later)
+
+        kpi_card(f"{hr_color} Heart Rate", f"{v['heart_rate']} bpm", cols[0])
+        kpi_card(f"{spo2_color} SpO₂", f"{v['spo2']} %", cols[1])
+        kpi_card(f"{temp_color} Temp", f"{v['temperature']} °C", cols[2])
+        kpi_card(f"{bp_color} BP", f"{v['blood_pressure']}", cols[3])
 
         st.markdown('<div class="vg-card">', unsafe_allow_html=True)
         st.write("### Trend (last 30 minutes)")
@@ -81,7 +88,7 @@ with tabs[0]:
             st.info("No history available for this patient.")
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # threshold check
+        # threshold check (manual)
         if st.button("🧪 Check Thresholds"):
             alerts = []
             if v["spo2"] < 95: alerts.append("Low SpO₂ detected")
@@ -100,6 +107,22 @@ with tabs[0]:
                 st.error(alerts)
             else:
                 success_toast("Vitals are within safe limits ✅")
+
+        # >>> Added: auto-check vitals thresholds every load
+        auto_alerts = []
+        if v["spo2"] < 90: auto_alerts.append("🚨 CRITICAL: SpO₂ dangerously low!")
+        if v["heart_rate"] > 130: auto_alerts.append("🚨 CRITICAL: Severe tachycardia!")
+        if v["temperature"] > 39.5: auto_alerts.append("🚨 CRITICAL: High-grade fever!")
+
+        if auto_alerts:
+            for a in auto_alerts:
+                st.error(a)
+            st.session_state.audit.add(
+                action="auto_threshold_alert",
+                subject=patient_id,
+                status="triggered",
+                scopes=st.session_state.oauth.scopes(),
+            )
 
         # alert doctor
         message = st.text_input("Message to Doctor", "Critical condition detected")
@@ -132,6 +155,7 @@ with tabs[0]:
                     status="forbidden",
                     scopes=st.session_state.oauth.scopes(),
                 )
+
 
 # -------------------- Agent Console --------------------
 with tabs[1]:
