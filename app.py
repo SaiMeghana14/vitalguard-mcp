@@ -13,7 +13,7 @@ from modules.data_io import load_vitals, get_patient_ids, get_patient, vitals_da
 from modules.security import OAuthGateway, require_scope, ConsentManager
 from modules.mcp import MCPRegistry, ToolCallResult
 from modules.analytics import AuditLog, export_logs_csv
-from modules.ui import hero, kpi_card, scope_badge, section_title, success_toast, warn_toast
+from modules import hero, kpi_card, scope_badge, section_title, success_toast, warn_toast
 
 st.set_page_config(page_title="VitalGuard MCP", page_icon="🏥", layout="wide")
 
