@@ -1,3 +1,10 @@
+import sys
+import os
+
+print("Current working directory:", os.getcwd())
+print("Python path:", sys.path)
+print("Folder contents:", os.listdir("."))
+
 import streamlit as st
 import json, pandas as pd, numpy as np, matplotlib.pyplot as plt, uuid, time
 from pathlib import Path
