@@ -24,7 +24,6 @@ if css_path.exists():
     st.markdown(f"<style>{css_path.read_text()}</style>", unsafe_allow_html=True)
 else:
     st.warning(f"CSS file not found: {css_path}")
-st.markdown(f"<style>{css_path.read_text()}</style>", unsafe_allow_html=True)
 
 # ---- Session State ----
 if "oauth" not in st.session_state:
@@ -53,7 +52,7 @@ with tabs[0]:
         patient_id = st.selectbox("Select Patient", options=get_patient_ids(data), index=0)
         patient = get_patient(data, patient_id)
         st.markdown('<div class="vg-card">', unsafe_allow_html=True)
-        kpi_card("Patient", patient_info["name"])
+        kpi_card("Patient", patient["name"])
         kpi_card("ID", patient_id)
         kpi_card("Auth Status", "Connected" if st.session_state.oauth.token else "Not Connected")
         st.markdown('</div>', unsafe_allow_html=True)
@@ -72,7 +71,7 @@ with tabs[0]:
 
     with colR:
         cols = st.columns(4)
-        v = patient["vitals"]
+        v = patient.get("vitals", {})
 
         # >>> Added: conditional color alerts on KPI cards
         hr_color = "🔴" if v["heart_rate"] > 120 else "🟢"
@@ -96,6 +95,7 @@ with tabs[0]:
             plt.legend()
             plt.xlabel("Time"); plt.ylabel("Value")
             st.pyplot(fig)
+            plt.close(fig)
         else:
             st.info("No history available for this patient.")
         st.markdown('</div>', unsafe_allow_html=True)
@@ -258,13 +258,13 @@ with tabs[3]:
     df = st.session_state.audit.as_dataframe()
     if df is not None and len(df) > 0:
         st.dataframe(df, use_container_width=True, height=360)
-        if st.button("⬇️ Export CSV"):
-            st.download_button(
-                "Download audit_logs.csv",
-                data=export_logs_csv(df),
-                file_name="audit_logs.csv",
-                mime="text/csv"
-            )
+        st.download_button(
+            "⬇️ Download audit_logs.csv",
+            data=export_logs_csv(df),
+            file_name="audit_logs.csv",
+            mime="text/csv"
+)
+
     else:
         st.info("No audit logs yet. Execute some actions first.")
     st.markdown('</div>', unsafe_allow_html=True)
