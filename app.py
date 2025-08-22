@@ -35,7 +35,7 @@ if "consent" not in st.session_state:
     st.session_state.consent = ConsentManager()
 
 # ---- Data ----
-DATA_FILE = Path(__file__).resolve().parents[1] / "data" / "vitals.json"
+DATA_FILE = Path(__file__).resolve().parent / "data" / "vitals.json"
 data = load_vitals(DATA_FILE)
 
 # ---- Header ----
