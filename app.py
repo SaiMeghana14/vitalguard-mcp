@@ -51,6 +51,11 @@ with tabs[0]:
     with colL:
         patient_id = st.selectbox("Select Patient", options=get_patient_ids(data), index=0)
         patient = get_patient(data, patient_id)
+        
+        if patient is None:
+            st.error(f"❌ Patient with ID {patient_id} not found in vitals.json")
+            st.stop()
+            
         st.markdown('<div class="vg-card">', unsafe_allow_html=True)
         kpi_card("Patient", patient["name"])
         kpi_card("ID", patient_id)
