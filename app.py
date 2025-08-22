@@ -53,7 +53,7 @@ with tabs[0]:
         patient_id = st.selectbox("Select Patient", options=get_patient_ids(data), index=0)
         patient = get_patient(data, patient_id)
         st.markdown('<div class="vg-card">', unsafe_allow_html=True)
-        kpi_card("Patient", patient["name"])
+        kpi_card("Patient", patient_info["name"])
         kpi_card("ID", patient_id)
         kpi_card("Auth Status", "Connected" if st.session_state.oauth.token else "Not Connected")
         st.markdown('</div>', unsafe_allow_html=True)
