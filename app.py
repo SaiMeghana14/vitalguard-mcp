@@ -46,23 +46,28 @@ tabs = st.tabs(["🏠 Dashboard", "🤖 Agent Console", "🛡️ Security & Scop
 # -------------------- Dashboard --------------------
 with tabs[0]:
     section_title("Patient Monitoring")
-    colL, colR = st.columns([1,2], gap="large")
+    colL, colR = st.columns([1, 2], gap="large")
 
     with colL:
-        st.write("Available IDs:", [p["id"] for p in data["patients"]])
-        st.write("Selected ID:", patient_id)
+        # Select patient ID from keys
         patient_id = st.sidebar.selectbox(
             "Select Patient",
-            [p["id"] for p in data["patients"]]
+            list(data.keys())
         )
-        patient = get_patient(data, patient_id)
-        
-        if patient is None:
+
+        st.write("Available IDs:", list(data.keys()))
+        st.write("Selected ID:", patient_id)
+
+        # Fetch patient data (list of vitals for this ID)
+        patient = data.get(patient_id, None)
+
+        if not patient:
             st.error(f"❌ Patient {patient_id} not found!")
-            st.stop()       
+            st.stop()
+
         st.markdown('<div class="vg-card">', unsafe_allow_html=True)
         kpi_card("Patient", patient_id)
-        kpi_card("Auth Status", "Connected" if st.session_state.oauth.token else "Not Connected")
+        kpi_card("Auth Status", "Connected" if hasattr(st.session_state, "oauth") and st.session_state.oauth.token else "Not Connected")
         st.markdown('</div>', unsafe_allow_html=True)
 
         if st.button("🔄 Refresh simulated vitals"):
