@@ -11,7 +11,7 @@ def get_patient(data, patient_id):
     return data.get(patient_id)
 
 def vitals_dataframe(patient):
-    hist = patient.get("history", [])
+    hist = patient
     if not hist:
         return None
     return pd.DataFrame(hist)
