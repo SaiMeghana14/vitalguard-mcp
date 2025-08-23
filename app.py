@@ -49,16 +49,19 @@ with tabs[0]:
     colL, colR = st.columns([1,2], gap="large")
 
     with colL:
-        patient_id = st.selectbox("Select Patient", options=get_patient_ids(data), index=0)
+        st.write("Available IDs:", [p["id"] for p in data["patients"]])
+        st.write("Selected ID:", patient_id)
+        patient_id = st.sidebar.selectbox(
+            "Select Patient",
+            [p["id"] for p in data["patients"]]
+        )
         patient = get_patient(data, patient_id)
         
         if patient is None:
-            st.error(f"❌ Patient with ID {patient_id} not found in vitals.json")
-            st.stop()
-            
+            st.error(f"❌ Patient {patient_id} not found!")
+            st.stop()       
         st.markdown('<div class="vg-card">', unsafe_allow_html=True)
-        kpi_card("Patient", patient["name"])
-        kpi_card("ID", patient_id)
+        kpi_card("Patient", patient_id)
         kpi_card("Auth Status", "Connected" if st.session_state.oauth.token else "Not Connected")
         st.markdown('</div>', unsafe_allow_html=True)
 
