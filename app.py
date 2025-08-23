@@ -90,12 +90,12 @@ with tabs[0]:
         # >>> Added: conditional color alerts on KPI cards
         hr_color = "🔴" if v["heart_rate"] > 120 else "🟢"
         spo2_color = "🔴" if v["spo2"] < 95 else "🟢"
-        temp_color = "🔴" if v["temperature"] > 38 else "🟢"
+        temp_color = "🔴" if v["temp"] > 38 else "🟢"
         bp_color = "🟢"  # (could extend later)
 
         kpi_card(f"{hr_color} Heart Rate", f"{v['heart_rate']} bpm", cols[0])
         kpi_card(f"{spo2_color} SpO₂", f"{v['spo2']} %", cols[1])
-        kpi_card(f"{temp_color} Temp", f"{v['temperature']} °C", cols[2])
+        kpi_card(f"{temp_color} Temp", f"{v['temp']} °C", cols[2])
         kpi_card(f"{bp_color} BP", f"{v['blood_pressure']}", cols[3])
 
         st.markdown('<div class="vg-card">', unsafe_allow_html=True)
@@ -105,7 +105,7 @@ with tabs[0]:
             fig = plt.figure()
             plt.plot(pd.to_datetime(df["ts"]), df["heart_rate"], label="Heart Rate")
             plt.plot(pd.to_datetime(df["ts"]), df["spo2"], label="SpO2")
-            plt.plot(pd.to_datetime(df["ts"]), df["temperature"], label="Temp (°C)")
+            plt.plot(pd.to_datetime(df["ts"]), df["temp"], label="Temp (°C)")
             plt.legend()
             plt.xlabel("Time"); plt.ylabel("Value")
             st.pyplot(fig)
@@ -119,7 +119,7 @@ with tabs[0]:
             alerts = []
             if v["spo2"] < 95: alerts.append("Low SpO₂ detected")
             if v["heart_rate"] > 120: alerts.append("High heart rate detected")
-            if v["temperature"] > 38: alerts.append("High fever detected")
+            if v["temp"] > 38: alerts.append("High fever detected")
 
             st.session_state.audit.add(
                 action="check_thresholds",
@@ -138,7 +138,7 @@ with tabs[0]:
         auto_alerts = []
         if v["spo2"] < 90: auto_alerts.append("🚨 CRITICAL: SpO₂ dangerously low!")
         if v["heart_rate"] > 130: auto_alerts.append("🚨 CRITICAL: Severe tachycardia!")
-        if v["temperature"] > 39.5: auto_alerts.append("🚨 CRITICAL: High-grade fever!")
+        if v["temp"] > 39.5: auto_alerts.append("🚨 CRITICAL: High-grade fever!")
 
         if auto_alerts:
             for a in auto_alerts:
