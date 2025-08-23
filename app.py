@@ -84,7 +84,8 @@ with tabs[0]:
 
     with colR:
         cols = st.columns(4)
-        v = patient.get("vitals", {})
+        latest = patient[-1]  # last record for this patient
+        v = latest  # alias for clarity
 
         # >>> Added: conditional color alerts on KPI cards
         hr_color = "🔴" if v["heart_rate"] > 120 else "🟢"
