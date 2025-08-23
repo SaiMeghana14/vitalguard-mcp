@@ -103,7 +103,8 @@ with tabs[0]:
         df = vitals_dataframe(patient)
         if df is not None and len(df) > 0:
             fig = plt.figure()
-            plt.plot(pd.to_datetime(df["ts"]), df["heart_rate"], label="Heart Rate")
+            st.write(df.head())
+            plt.plot(pd.to_datetime(df["timestamp"]), df["heart_rate"], label="Heart Rate")
             plt.plot(pd.to_datetime(df["ts"]), df["spo2"], label="SpO2")
             plt.plot(pd.to_datetime(df["ts"]), df["temp"], label="Temp (°C)")
             plt.legend()
