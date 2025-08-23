@@ -96,7 +96,7 @@ with tabs[0]:
         kpi_card(f"{hr_color} Heart Rate", f"{v['heart_rate']} bpm", cols[0])
         kpi_card(f"{spo2_color} SpO₂", f"{v['spo2']} %", cols[1])
         kpi_card(f"{temp_color} Temp", f"{v['temp']} °C", cols[2])
-        kpi_card(f"{bp_color} BP", f"{v['blood_pressure']}", cols[3])
+        kpi_card(f"{bp_color} BP", f"{v['bp']}", cols[3])
 
         st.markdown('<div class="vg-card">', unsafe_allow_html=True)
         st.write("### Trend (last 30 minutes)")
