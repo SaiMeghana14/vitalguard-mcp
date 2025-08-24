@@ -20,13 +20,17 @@ class MCPRegistry:
     def list_tools(self):
         return self.tools
 
-    def execute(self, tool_name: str, patient: str, data: Dict[str, Any], oauth, consent, audit, prompt: str="") -> ToolCallResult:
+    def execute(self, tool_name: str, patient_id: str, prompt: str = None):
         if tool_name == "get_vitals":
-            require_scope(oauth, "vitals:read")
-            p = data.get(patient)
-            if not p: return ToolCallResult(False, "Patient not found")
-            audit.add("get_vitals", subject=patient, status="ok", scopes=oauth.scopes())
-            return ToolCallResult(True, "Vitals retrieved", p.get("vitals"))
+            p = self.get_patient(patient_id)
+            if not p:
+                return ToolCallResult(False, f"Patient {patient_id} not found", None)
+    
+            vitals = p.get("vitals", {})
+            return ToolCallResult(True, "Vitals retrieved", vitals)
+    
+        # fallback for unknown tools
+        return ToolCallResult(False, f"Unknown tool: {tool_name}", None)
 
         if tool_name == "check_thresholds":
             require_scope(oauth, "vitals:read")
