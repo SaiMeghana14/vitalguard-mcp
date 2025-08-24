@@ -1,5 +1,9 @@
 import secrets, time
 
+# ✅ Toggle for skipping auth in demo mode
+DEMO_MODE = True   # set to False for real OAuth enforcement
+
+
 class OAuthGateway:
     def __init__(self):
         self.token = None
@@ -17,11 +21,18 @@ class OAuthGateway:
     def scopes(self):
         return self._scopes
 
+
 def require_scope(gateway: OAuthGateway, scope: str):
+    if DEMO_MODE:
+        # 🚨 Skips OAuth checks in demo mode
+        return True
+
+    # 🔒 Normal behavior when DEMO_MODE = False
     if not gateway.token:
         raise PermissionError("Not authenticated. Please connect via OAuth.")
     if scope not in gateway.scopes():
         raise PermissionError(f"Missing required scope: {scope}")
+
 
 class ConsentManager:
     def __init__(self):
