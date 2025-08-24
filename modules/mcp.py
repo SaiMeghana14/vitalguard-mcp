@@ -29,8 +29,9 @@ class MCPRegistry:
             vitals = p.get("vitals", {})
             return ToolCallResult(True, "Vitals retrieved", vitals)
     
-        # fallback for unknown tools
+        # Always return a ToolCallResult for unknown tools
         return ToolCallResult(False, f"Unknown tool: {tool_name}", None)
+
 
         if tool_name == "check_thresholds":
             require_scope(oauth, "vitals:read")
