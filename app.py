@@ -3,6 +3,8 @@ import os
 import streamlit as st
 from modules import security
 
+st.set_page_config(page_title="VitalGuard MCP", page_icon="🏥", layout="wide")
+
 # 🔔 Show banner if running in demo mode
 if getattr(security, "DEMO_MODE", False):
     st.warning("⚠️ Running in DEMO MODE — OAuth checks are skipped.")
@@ -18,7 +20,6 @@ from modules.mcp import MCPRegistry, ToolCallResult
 from modules.analytics import AuditLog, export_logs_csv
 from modules.ui import hero, kpi_card, scope_badge, section_title, success_toast, warn_toast
 
-st.set_page_config(page_title="VitalGuard MCP", page_icon="🏥", layout="wide")
 
 # ---- Load CSS ----
 css_path = Path(__file__).resolve().parent / "assets" / "theme.css"
