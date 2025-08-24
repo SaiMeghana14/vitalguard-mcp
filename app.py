@@ -1,11 +1,14 @@
 import sys
 import os
-
-print("Current working directory:", os.getcwd())
-print("Python path:", sys.path)
-print("Folder contents:", os.listdir("."))
-
 import streamlit as st
+from modules import security
+
+# 🔔 Show banner if running in demo mode
+if getattr(security, "DEMO_MODE", False):
+    st.warning("⚠️ Running in DEMO MODE — OAuth checks are skipped.")
+else:
+    st.success("🔒 Secure mode enabled — OAuth required.")
+
 import json, pandas as pd, numpy as np, matplotlib.pyplot as plt, uuid, time
 from pathlib import Path
 
