@@ -40,41 +40,7 @@ if "consent" not in st.session_state:
 
 # ---- Data ----
 DATA_FILE = Path(__file__).resolve().parent / "data" / "vitals.json"
-raw_data = load_vitals(DATA_FILE)
-
-# --- normalize vitals.json ---
-import pandas as pd
-if isinstance(raw_data, dict):
-    # Option 2 style: { "P001": [ {...}, {...} ], ... }
-    rows = []
-    for pid, records in raw_data.items():
-        for r in records:
-            rec = r.copy()
-            rec["patient_id"] = pid
-            # normalize temperature key
-            if "temperature" in rec and "temp" not in rec:
-                rec["temp"] = rec["temperature"]
-            rows.append(rec)
-    data = pd.DataFrame(rows)
-elif isinstance(raw_data, list):
-    # Option 1 style: [ {patient_id: ..., vitals...}, ... ]
-    rows = []
-    for r in raw_data:
-        rec = r.copy()
-        if "temperature" in rec and "temp" not in rec:
-            rec["temp"] = rec["temperature"]
-        rows.append(rec)
-    data = pd.DataFrame(rows)
-elif isinstance(raw_data, pd.DataFrame):
-    data = raw_data.copy()
-    if "temperature" in data.columns and "temp" not in data.columns:
-        data["temp"] = data["temperature"]
-else:
-    data = pd.DataFrame()
-
-# Ensure timestamp is datetime if present
-if "timestamp" in data.columns:
-    data["timestamp"] = pd.to_datetime(data["timestamp"], errors="coerce")
+data = load_vitals(DATA_FILE)
 
 # ---- Header ----
 hero(title="VitalGuard MCP", subtitle="Secure Healthcare IoT Server for AI Agents", badge="MCP + OAuth (simulated)")
@@ -88,34 +54,15 @@ with tabs[0]:
     colL, colR = st.columns([1, 2], gap="large")
 
     with colL:
-        if not data.empty and "patient_id" in data.columns:
+        # Handle both dict-style and DataFrame-style vitals.json
+        if isinstance(data, dict):
+            patient_ids = list(data.keys())
+        elif isinstance(data, pd.DataFrame) and "patient_id" in data.columns:
             patient_ids = data["patient_id"].unique().tolist()
         else:
             patient_ids = []
-
-    patient_id = st.sidebar.selectbox("Select Patient", patient_ids)
-
-    if patient_id not in patient_ids:
-        st.error(f"❌ Patient {patient_id} not found!")
-        st.stop()
-
-    st.markdown('<div class="vg-card">', unsafe_allow_html=True)
-    kpi_card("Patient", patient_id)
-    kpi_card("Auth Status", "Connected" if hasattr(st.session_state, "oauth") and st.session_state.oauth.token else "Not Connected")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    if st.button("🔄 Refresh simulated vitals"):
-        new_entry = {
-            "timestamp": pd.Timestamp.now(),
-            "heart_rate": int(np.clip(80 + np.random.randint(-10, 20), 60, 150)),
-            "spo2": int(np.clip(95 + np.random.randint(-5, 5), 80, 100)),
-            "bp": f"{np.random.randint(110, 160)}/{np.random.randint(70, 100)}",
-            "temp": round(np.random.uniform(36.0, 39.5), 1),
-            "patient_id": patient_id
-        }
-        data = pd.concat([data, pd.DataFrame([new_entry])], ignore_index=True)
-        data.to_json(DATA_FILE, orient="records", indent=2, date_format="iso")
-        success_toast("Vitals updated")
+    
+        patient_id = st.sidebar.selectbox("Select Patient", patient_ids)
     
         st.write("Available IDs:", patient_ids)
         st.write("Selected ID:", patient_id)
@@ -161,13 +108,8 @@ with tabs[0]:
 
     with colR:
         cols = st.columns(4)
-        patient = data[data["patient_id"] == patient_id]
-        if patient.empty:
-            st.error("❌ No vitals for this patient")
-            st.stop()
-    
-        latest = patient.sort_values("timestamp").iloc[-1].to_dict()
-        v = latest
+        latest = patient[-1]  # last record for this patient
+        v = latest  # alias for clarity
 
         # >>> Added: conditional color alerts on KPI cards
         hr_color = "🔴" if v["heart_rate"] > 120 else "🟢"
