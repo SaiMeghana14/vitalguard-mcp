@@ -1,6 +1,7 @@
 import sys
 import os
 import streamlit as st
+import uuid
 from modules import security
 
 st.set_page_config(page_title="VitalGuard MCP", page_icon="🏥", layout="wide")
@@ -219,26 +220,38 @@ with tabs[1]:
         patient_id = st.selectbox("Patient", get_patient_ids(data), key="agent_patient")
         prompt = st.text_input("Agent Instruction", "Check thresholds and alert doctor if risky.")
 
-        if st.button("▶️ Run"):
-            trace_id = str(uuid.uuid4())[:8]
-            st.write(f"Trace ID: `{trace_id}`")
-            # Simulated MCP execution
-            result: ToolCallResult = registry.execute(
-                tool_name=tool,
-                patient=patient_id,
-                data=data,
-                oauth=st.session_state.oauth,
-                consent=st.session_state.consent,
-                audit=st.session_state.audit,
-                prompt=prompt,
-            )
-            if result.ok:
-                st.success(result.message)
-                if result.payload is not None:
-                    st.json(result.payload)
-            else:
-                st.error(result.message)
-        st.markdown('</div>', unsafe_allow_html=True)
+                if st.button("▶️ Run"):
+                trace_id = str(uuid.uuid4())[:8]
+                st.write(f"Trace ID: `{trace_id}`")
+    
+                # Collect args
+                kwargs = dict(
+                    tool_name=tool,
+                    patient_id=patient_id,   # ✅ fixed (was "patient")
+                    data=data,
+                    oauth=st.session_state.get("oauth"),
+                    consent=st.session_state.get("consent"),
+                    audit=st.session_state.get("audit"),
+                    prompt=prompt,
+                )
+    
+                # Filter only supported args for registry.execute()
+                import inspect
+                sig = inspect.signature(registry.execute)
+                supported = {k: v for k, v in kwargs.items() if k in sig.parameters}
+    
+                # Simulated MCP execution
+                result: ToolCallResult = registry.execute(**supported)
+    
+                if result.ok:
+                    st.success(result.message)
+                    if result.payload:
+                        if isinstance(result.payload, (dict, list)):
+                            st.json(result.payload)
+                        else:
+                            st.write(result.payload)
+                else:
+                    st.error(result.message)
 
 # -------------------- Security & Scopes --------------------
 with tabs[2]:
