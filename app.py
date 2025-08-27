@@ -79,9 +79,6 @@ with tabs[0]:
             st.error(f"❌ Patient {patient_id} not found!")
             st.stop()
 
-        st.write("Available IDs:", list(data.keys()))
-        st.write("Selected ID:", patient_id)
-
         # Fetch patient data (list of vitals for this ID)
         patient = data.get(patient_id, None)
 
