@@ -221,37 +221,37 @@ with tabs[1]:
         prompt = st.text_input("Agent Instruction", "Check thresholds and alert doctor if risky.")
 
                 if st.button("▶️ Run"):
-                trace_id = str(uuid.uuid4())[:8]
-                st.write(f"Trace ID: `{trace_id}`")
-    
-                # Collect args
-                kwargs = dict(
-                    tool_name=tool,
-                    patient_id=patient_id,   # ✅ fixed (was "patient")
-                    data=data,
-                    oauth=st.session_state.get("oauth"),
-                    consent=st.session_state.get("consent"),
-                    audit=st.session_state.get("audit"),
-                    prompt=prompt,
-                )
-    
-                # Filter only supported args for registry.execute()
-                import inspect
-                sig = inspect.signature(registry.execute)
-                supported = {k: v for k, v in kwargs.items() if k in sig.parameters}
-    
-                # Simulated MCP execution
-                result: ToolCallResult = registry.execute(**supported)
-    
-                if result.ok:
-                    st.success(result.message)
-                    if result.payload:
-                        if isinstance(result.payload, (dict, list)):
-                            st.json(result.payload)
-                        else:
-                            st.write(result.payload)
-                else:
-                    st.error(result.message)
+                    trace_id = str(uuid.uuid4())[:8]
+                    st.write(f"Trace ID: `{trace_id}`")
+        
+                    # Collect args
+                    kwargs = dict(
+                        tool_name=tool,
+                        patient_id=patient_id,   # ✅ fixed (was "patient")
+                        data=data,
+                        oauth=st.session_state.get("oauth"),
+                        consent=st.session_state.get("consent"),
+                        audit=st.session_state.get("audit"),
+                        prompt=prompt,
+                    )
+        
+                    # Filter only supported args for registry.execute()
+                    import inspect
+                    sig = inspect.signature(registry.execute)
+                    supported = {k: v for k, v in kwargs.items() if k in sig.parameters}
+        
+                    # Simulated MCP execution
+                    result: ToolCallResult = registry.execute(**supported)
+        
+                    if result.ok:
+                        st.success(result.message)
+                        if result.payload:
+                            if isinstance(result.payload, (dict, list)):
+                                st.json(result.payload)
+                            else:
+                                st.write(result.payload)
+                    else:
+                        st.error(result.message)
 
 # -------------------- Security & Scopes --------------------
 with tabs[2]:
