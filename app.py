@@ -54,11 +54,30 @@ with tabs[0]:
     colL, colR = st.columns([1, 2], gap="large")
 
     with colL:
-        # Select patient ID from keys
-        patient_id = st.sidebar.selectbox(
-            "Select Patient",
-            list(data.keys())
-        )
+        # Handle both dict-style and DataFrame-style vitals.json
+        if isinstance(data, dict):
+            patient_ids = list(data.keys())
+        elif isinstance(data, pd.DataFrame) and "patient_id" in data.columns:
+            patient_ids = data["patient_id"].unique().tolist()
+        else:
+            patient_ids = []
+    
+        patient_id = st.sidebar.selectbox("Select Patient", patient_ids)
+    
+        st.write("Available IDs:", patient_ids)
+        st.write("Selected ID:", patient_id)
+    
+        # Fetch patient data
+        if isinstance(data, dict):
+            patient = data.get(patient_id, None)
+        elif isinstance(data, pd.DataFrame):
+            patient = data[data["patient_id"] == patient_id].to_dict(orient="records")
+        else:
+            patient = None
+    
+        if not patient:
+            st.error(f"❌ Patient {patient_id} not found!")
+            st.stop()
 
         st.write("Available IDs:", list(data.keys()))
         st.write("Selected ID:", patient_id)
