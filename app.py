@@ -88,10 +88,10 @@ with tabs[0]:
     colL, colR = st.columns([1, 2], gap="large")
 
     with colL:
-    if not data.empty and "patient_id" in data.columns:
-        patient_ids = data["patient_id"].unique().tolist()
-    else:
-        patient_ids = []
+        if not data.empty and "patient_id" in data.columns:
+            patient_ids = data["patient_id"].unique().tolist()
+        else:
+            patient_ids = []
 
     patient_id = st.sidebar.selectbox("Select Patient", patient_ids)
 
@@ -116,8 +116,6 @@ with tabs[0]:
         data = pd.concat([data, pd.DataFrame([new_entry])], ignore_index=True)
         data.to_json(DATA_FILE, orient="records", indent=2, date_format="iso")
         success_toast("Vitals updated")
-    
-        patient_id = st.sidebar.selectbox("Select Patient", patient_ids)
     
         st.write("Available IDs:", patient_ids)
         st.write("Selected ID:", patient_id)
