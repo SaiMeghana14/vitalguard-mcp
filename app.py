@@ -258,7 +258,16 @@ with tabs[1]:
                 else:
                     st.error(result.message)
                 
-                if "patient_id" not in data.columns or data.empty:
+                import pandas as pd
+
+                # Ensure JSON data is always a DataFrame
+                if isinstance(data, dict):
+                    data = pd.DataFrame([data])   # wrap single dict in list
+                elif isinstance(data, list):
+                    data = pd.DataFrame(data)
+                
+                # Now it's safe to check columns
+                if data is None or data.empty or "patient_id" not in data.columns:
                     st.warning("No patient data found, injecting demo patients...")
                     data = pd.DataFrame([
                         {"patient_id": "P001", "heart_rate": 80, "spo2": 97, "temp": 36.8},
