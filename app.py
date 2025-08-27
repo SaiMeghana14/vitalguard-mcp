@@ -217,9 +217,14 @@ with tabs[1]:
             st.markdown('<div class="vg-card">', unsafe_allow_html=True)
             st.write("### Execute Tool As Agent")
             tool = st.selectbox("Tool", [t["name"] for t in tools])
-            patient_id = st.selectbox("Patient", get_patient_ids(data), key="agent_patient")
+            valid_ids = get_patient_ids(data)
+            patient_id = st.selectbox("Patient", valid_ids, key="agent_patient")
+            if patient_id not in valid_ids:
+                st.error(f"⚠️ Patient {patient_id} not found in dataset")
             prompt = st.text_input("Agent Instruction", "Check thresholds and alert doctor if risky.")
     
+            st.write("Available patients in data:", list(get_patient_ids(data)))
+
             if st.button("▶️ Run"):
                 trace_id = str(uuid.uuid4())[:8]
                 st.write(f"Trace ID: `{trace_id}`")
@@ -252,6 +257,13 @@ with tabs[1]:
                             st.write(result.payload)
                 else:
                     st.error(result.message)
+                
+                if "patient_id" not in data.columns or data.empty:
+                    st.warning("No patient data found, injecting demo patients...")
+                    data = pd.DataFrame([
+                        {"patient_id": "P001", "heart_rate": 80, "spo2": 97, "temp": 36.8},
+                        {"patient_id": "P002", "heart_rate": 120, "spo2": 90, "temp": 38.5},
+                    ])
 
 # -------------------- Security & Scopes --------------------
 with tabs[2]:
