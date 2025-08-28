@@ -287,22 +287,28 @@ if show_agent_console:
     tools = registry.list_tools()
     tool = st.selectbox("Tool", [t["name"] for t in tools], key="sidebar_tool")
 
-    # ✅ Use DataFrame instead of dict
-    def get_patient(pid: str):
-        if pid in data:
-            return data[pid]
-        else:
-            return {
-                "name": f"AutoGen {pid}",
-                "age": np.random.randint(20, 80),
-                "gender": np.random.choice(["M", "F"]),
-                "vitals": {"HR": np.random.randint(60, 100),
-                           "BP": f"{np.random.randint(110,130)}/{np.random.randint(70,85)}",
-                           "SpO2": np.random.randint(95, 100)}
-            }
+    import numpy as np, uuid
 
-    valid_ids = get_patient_ids(data)
+    # ✅ Always generate a patient record (no static `data` needed)
+    def get_patient(pid: str):
+        return {
+            "name": f"AutoGen {pid}",
+            "age": int(np.random.randint(20, 80)),
+            "gender": np.random.choice(["M", "F"]),
+            "vitals": {
+                "HR": int(np.random.randint(60, 100)),
+                "BP": f"{np.random.randint(110,130)}/{np.random.randint(70,85)}",
+                "SpO2": int(np.random.randint(95, 100)),
+            }
+        }
+
+    # ✅ Just generate some sample IDs instead of relying on `get_patient_ids(data)`
+    valid_ids = [f"P{str(i).zfill(3)}" for i in range(1, 11)]
     patient_id = st.selectbox("Patient", valid_ids, key="sidebar_agent_patient")
+
+    # Fetch patient details
+    patient = get_patient(patient_id)
+
     prompt = st.text_input("Agent Instruction", "Check thresholds and alert doctor if risky.", key="sidebar_prompt")
 
     if st.button("▶️ Run (Sidebar Agent)"):
@@ -312,7 +318,7 @@ if show_agent_console:
         kwargs = dict(
             tool_name=tool,
             patient_id=patient_id,
-            data=data,
+            data=patient,  # ✅ pass single patient dict instead of undefined `data`
             oauth=st.session_state.get("oauth"),
             consent=st.session_state.get("consent"),
             audit=st.session_state.get("audit"),
@@ -331,6 +337,7 @@ if show_agent_console:
                 st.json(result.payload)
         else:
             st.error(result.message)
+
     st.markdown('</div>', unsafe_allow_html=True)
 
 
