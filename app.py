@@ -317,8 +317,8 @@ if show_agent_console:
     def get_patient_ids(df):
         return df["id"].tolist()  # ✅ extract from column
 
-   valid_ids = get_patient_ids(data)
-   patient_id = st.selectbox("Patient", valid_ids, key="sidebar_agent_patient")
+    valid_ids = get_patient_ids(data)
+    patient_id = st.selectbox("Patient", valid_ids, key="sidebar_agent_patient")
 
     # Fetch patient details
     patient = get_patient(patient_id)
