@@ -85,7 +85,7 @@ hero(title="VitalGuard MCP", subtitle="Secure Healthcare IoT Server for AI Agent
 tabs = st.tabs(["🏠 Dashboard", "🛡️ Security & Scopes", "🧾 Audit Logs", "⚙️ Settings", "ℹ️ About"])
 
 # -------------------- Dashboard --------------------
-with tabs[1]:
+with tabs[0]:
     section_title("Patient Monitoring")
     colL, colR = st.columns([1, 2], gap="large")
 
@@ -208,7 +208,7 @@ with tabs[1]:
                 )
 
 # -------------------- Security & Scopes --------------------
-with tabs[2]:
+with tabs[1]:
     section_title("OAuth (Cequence-like) Gateway — Simulated")
     st.markdown('<div class="vg-card">', unsafe_allow_html=True)
     st.write("Connect and issue a token with **scoped** permissions:")
@@ -238,7 +238,7 @@ with tabs[2]:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------- Audit Logs --------------------
-with tabs[3]:
+with tabs[2]:
     section_title("Audit & Observability")
     st.markdown('<div class="vg-card">', unsafe_allow_html=True)
     df = st.session_state.audit.as_dataframe()
@@ -256,13 +256,13 @@ with tabs[3]:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------- Settings --------------------
-with tabs[4]:
+with tabs[3]:
     section_title("Settings")
     st.write("You can extend this demo with real IoT data sources (e.g., Firebase, Blynk, MQTT).")
     st.write("Swap the simulated OAuth with a real **Cequence AI Gateway** in front of a FastAPI MCP server.")
 
 # -------------------- About --------------------
-with tabs[5]:
+with tabs[4]:
     section_title("About VitalGuard MCP")
     st.write("Built for the Global MCP Hackathon to demonstrate **secure, permissioned, and observable** agent-to-API interactions in healthcare.")
     st.markdown("**MCP Tools implemented:** `get_vitals`, `check_thresholds`, `alert_doctor`")
