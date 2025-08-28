@@ -289,22 +289,36 @@ if show_agent_console:
 
     import numpy as np, uuid
 
-    # ✅ Always generate a patient record (no static `data` needed)
+   # ✅ Works with DataFrame instead of dict
     def get_patient(pid: str):
-        return {
-            "name": f"AutoGen {pid}",
-            "age": int(np.random.randint(20, 80)),
-            "gender": np.random.choice(["M", "F"]),
-            "vitals": {
-                "HR": int(np.random.randint(60, 100)),
-                "BP": f"{np.random.randint(110,130)}/{np.random.randint(70,85)}",
-                "SpO2": int(np.random.randint(95, 100)),
+        if pid in data["id"].values:  # check patient IDs column
+            row = data[data["id"] == pid].iloc[0]
+            return {
+                "name": row.get("name", f"Patient {pid}"),
+                "age": int(row.get("age", np.random.randint(20, 80))),
+                "gender": row.get("gender", np.random.choice(["M", "F"])),
+                "vitals": {
+                    "HR": int(row.get("HR", np.random.randint(60, 100))),
+                    "BP": row.get("BP", f"{np.random.randint(110,130)}/{np.random.randint(70,85)}"),
+                    "SpO2": int(row.get("SpO2", np.random.randint(95, 100)))
+                }
             }
-        }
+        else:
+            # Auto-generate a fallback patient if not found
+            return {
+                "name": f"AutoGen {pid}",
+                "age": np.random.randint(20, 80),
+                "gender": np.random.choice(["M", "F"]),
+                "vitals": {"HR": np.random.randint(60, 100),
+                           "BP": f"{np.random.randint(110,130)}/{np.random.randint(70,85)}",
+                           "SpO2": np.random.randint(95, 100)}
+            }
+    
+    def get_patient_ids(df):
+        return df["id"].tolist()  # ✅ extract from column
 
-    # ✅ Just generate some sample IDs instead of relying on `get_patient_ids(data)`
-    valid_ids = [f"P{str(i).zfill(3)}" for i in range(1, 11)]
-    patient_id = st.selectbox("Patient", valid_ids, key="sidebar_agent_patient")
+   valid_ids = get_patient_ids(data)
+   patient_id = st.selectbox("Patient", valid_ids, key="sidebar_agent_patient")
 
     # Fetch patient details
     patient = get_patient(patient_id)
