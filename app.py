@@ -288,8 +288,18 @@ if show_agent_console:
     tool = st.selectbox("Tool", [t["name"] for t in tools], key="sidebar_tool")
 
     # ✅ Use DataFrame instead of dict
-    def get_patient_ids(df):
-        return df["patient_id"].unique().tolist() if not df.empty else []
+    def get_patient(pid: str):
+        if pid in data:
+            return data[pid]
+        else:
+            return {
+                "name": f"AutoGen {pid}",
+                "age": np.random.randint(20, 80),
+                "gender": np.random.choice(["M", "F"]),
+                "vitals": {"HR": np.random.randint(60, 100),
+                           "BP": f"{np.random.randint(110,130)}/{np.random.randint(70,85)}",
+                           "SpO2": np.random.randint(95, 100)}
+            }
 
     valid_ids = get_patient_ids(data)
     patient_id = st.selectbox("Patient", valid_ids, key="sidebar_agent_patient")
