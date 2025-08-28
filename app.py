@@ -15,12 +15,49 @@ else:
 import json, pandas as pd, numpy as np, matplotlib.pyplot as plt, uuid, time
 from pathlib import Path
 
-from modules.data_io import load_vitals, get_patient_ids, get_patient, vitals_dataframe
+# ---- Drop-in JSON loader (Option 2) ----
+DATA_FILE = Path(__file__).resolve().parent / "data" / "vitals.json"
+
+def load_vitals(file_path=DATA_FILE):
+    try:
+        with open(file_path, "r") as f:
+            raw = json.load(f)
+
+        rows = []
+        for patient_id, records in raw.items():
+            for r in records:
+                rows.append({
+                    "patient_id": patient_id,
+                    "timestamp": pd.to_datetime(r["timestamp"]),
+                    "heart_rate": r["heart_rate"],
+                    "spo2": r["spo2"],
+                    "bp": r["bp"],
+                    "temp": r["temp"],
+                })
+        return pd.DataFrame(rows)
+
+    except (FileNotFoundError, json.JSONDecodeError):
+        return pd.DataFrame([])
+
+def save_vitals(df, file_path=DATA_FILE):
+    grouped = {}
+    for _, row in df.iterrows():
+        pid = row["patient_id"]
+        grouped.setdefault(pid, []).append({
+            "timestamp": row["timestamp"].strftime("%Y-%m-%d %H:%M"),
+            "heart_rate": row["heart_rate"],
+            "spo2": row["spo2"],
+            "bp": row["bp"],
+            "temp": row["temp"]
+        })
+    with open(file_path, "w") as f:
+        json.dump(grouped, f, indent=4)
+
+# ---- Other imports (unchanged) ----
 from modules.security import OAuthGateway, require_scope, ConsentManager
 from modules.mcp import MCPRegistry, ToolCallResult
 from modules.analytics import AuditLog, export_logs_csv
 from modules.ui import hero, kpi_card, scope_badge, section_title, success_toast, warn_toast
-
 
 # ---- Load CSS ----
 css_path = Path(__file__).resolve().parent / "assets" / "theme.css"
@@ -39,7 +76,6 @@ if "consent" not in st.session_state:
     st.session_state.consent = ConsentManager()
 
 # ---- Data ----
-DATA_FILE = Path(__file__).resolve().parent / "data" / "vitals.json"
 data = load_vitals(DATA_FILE)
 
 # ---- Header ----
@@ -54,33 +90,14 @@ with tabs[0]:
     colL, colR = st.columns([1, 2], gap="large")
 
     with colL:
-        # Handle both dict-style and DataFrame-style vitals.json
-        if isinstance(data, dict):
-            patient_ids = list(data.keys())
-        elif isinstance(data, pd.DataFrame) and "patient_id" in data.columns:
-            patient_ids = data["patient_id"].unique().tolist()
-        else:
-            patient_ids = []
-    
+        # Always DataFrame now
+        patient_ids = data["patient_id"].unique().tolist() if not data.empty else []
         patient_id = st.sidebar.selectbox("Select Patient", patient_ids)
-    
+
         st.write("Available IDs:", patient_ids)
         st.write("Selected ID:", patient_id)
-    
-        # Fetch patient data
-        if isinstance(data, dict):
-            patient = data.get(patient_id, None)
-        elif isinstance(data, pd.DataFrame):
-            patient = data[data["patient_id"] == patient_id].to_dict(orient="records")
-        else:
-            patient = None
-    
-        if not patient:
-            st.error(f"❌ Patient {patient_id} not found!")
-            st.stop()
 
-        # Fetch patient data (list of vitals for this ID)
-        patient = data.get(patient_id, None)
+        patient = data[data["patient_id"] == patient_id].to_dict(orient="records")
 
         if not patient:
             st.error(f"❌ Patient {patient_id} not found!")
@@ -91,28 +108,16 @@ with tabs[0]:
         kpi_card("Auth Status", "Connected" if hasattr(st.session_state, "oauth") and st.session_state.oauth.token else "Not Connected")
         st.markdown('</div>', unsafe_allow_html=True)
 
-        if st.button("🔄 Refresh simulated vitals"):
-            # mutate a bit for demo
-            p = data[patient_id]
-            v = p["vitals"]
-            v["heart_rate"] = int(np.clip(v["heart_rate"] + np.random.randint(-5,6), 60, 140))
-            v["spo2"] = int(np.clip(v["spo2"] + np.random.randint(-2,3), 85, 100))
-            v["temperature"] = float(np.clip(v["temperature"] + np.random.uniform(-0.2,0.2), 35.5, 40.0))
-            data[patient_id] = p
-            with open(DATA_FILE, "w") as f:
-                json.dump(data, f, indent=2)
-            success_toast("Vitals updated")
-
     with colR:
         cols = st.columns(4)
         latest = patient[-1]  # last record for this patient
         v = latest  # alias for clarity
 
-        # >>> Added: conditional color alerts on KPI cards
+        # >>> Conditional color alerts on KPI cards
         hr_color = "🔴" if v["heart_rate"] > 120 else "🟢"
         spo2_color = "🔴" if v["spo2"] < 95 else "🟢"
         temp_color = "🔴" if v["temp"] > 38 else "🟢"
-        bp_color = "🟢"  # (could extend later)
+        bp_color = "🟢"
 
         kpi_card(f"{hr_color} Heart Rate", f"{v['heart_rate']} bpm", cols[0])
         kpi_card(f"{spo2_color} SpO₂", f"{v['spo2']} %", cols[1])
@@ -121,10 +126,9 @@ with tabs[0]:
 
         st.markdown('<div class="vg-card">', unsafe_allow_html=True)
         st.write("### Trend (last 30 minutes)")
-        df = vitals_dataframe(patient)
-        if df is not None and len(df) > 0:
+        if len(patient) > 0:
+            df = pd.DataFrame(patient)
             fig = plt.figure()
-            st.write(df.head())
             plt.plot(pd.to_datetime(df["timestamp"]), df["heart_rate"], label="Heart Rate")
             plt.plot(pd.to_datetime(df["timestamp"]), df["spo2"], label="SpO2")
             plt.plot(pd.to_datetime(df["timestamp"]), df["temp"], label="Temp (°C)")
@@ -136,7 +140,7 @@ with tabs[0]:
             st.info("No history available for this patient.")
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # threshold check (manual)
+        # Threshold checks (manual + auto)
         if st.button("🧪 Check Thresholds"):
             alerts = []
             if v["spo2"] < 95: alerts.append("Low SpO₂ detected")
@@ -156,7 +160,6 @@ with tabs[0]:
             else:
                 success_toast("Vitals are within safe limits ✅")
 
-        # >>> Added: auto-check vitals thresholds every load
         auto_alerts = []
         if v["spo2"] < 90: auto_alerts.append("🚨 CRITICAL: SpO₂ dangerously low!")
         if v["heart_rate"] > 130: auto_alerts.append("🚨 CRITICAL: Severe tachycardia!")
