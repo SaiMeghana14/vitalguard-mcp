@@ -82,10 +82,10 @@ data = load_vitals(DATA_FILE)
 hero(title="VitalGuard MCP", subtitle="Secure Healthcare IoT Server for AI Agents", badge="MCP + OAuth (simulated)")
 
 # ---- Tabs ----
-tabs = st.tabs(["🏠 Dashboard", "🤖 Agent Console", "🛡️ Security & Scopes", "🧾 Audit Logs", "⚙️ Settings", "ℹ️ About"])
+tabs = st.tabs(["🏠 Dashboard", "🛡️ Security & Scopes", "🧾 Audit Logs", "⚙️ Settings", "ℹ️ About"])
 
 # -------------------- Dashboard --------------------
-with tabs[0]:
+with tabs[1]:
     section_title("Patient Monitoring")
     colL, colR = st.columns([1, 2], gap="large")
 
@@ -207,92 +207,6 @@ with tabs[0]:
                     scopes=st.session_state.oauth.scopes(),
                 )
 
-
-# -------------------- Agent Console --------------------
-with tabs[1]:
-    section_title("MCP Agent Console")
-
-    registry = MCPRegistry()
-    colA, colB = st.columns([1,2], gap="large")
-
-    with colA:
-        st.markdown('<div class="vg-card">', unsafe_allow_html=True)
-        st.write("### Connected OAuth")
-        if st.session_state.oauth.token:
-            st.success(f"Token: {st.session_state.oauth.token[:8]}...")
-            st.write("Scopes:", ", ".join(st.session_state.oauth.scopes()))
-        else:
-            st.warning("No token. Connect under **Security & Scopes** tab.")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        st.markdown('<div class="vg-card">', unsafe_allow_html=True)
-        st.write("### Available Tools")
-        tools = registry.list_tools()
-        for t in tools:
-            st.markdown(f"- `{t['name']}` — {t['description']}")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        with colB:
-            st.markdown('<div class="vg-card">', unsafe_allow_html=True)
-            st.write("### Execute Tool As Agent")
-            tool = st.selectbox("Tool", [t["name"] for t in tools])
-            valid_ids = get_patient_ids(data)
-            patient_id = st.selectbox("Patient", valid_ids, key="agent_patient")
-            if patient_id not in valid_ids:
-                st.error(f"⚠️ Patient {patient_id} not found in dataset")
-            prompt = st.text_input("Agent Instruction", "Check thresholds and alert doctor if risky.")
-    
-            st.write("Available patients in data:", list(get_patient_ids(data)))
-
-            if st.button("▶️ Run"):
-                trace_id = str(uuid.uuid4())[:8]
-                st.write(f"Trace ID: `{trace_id}`")
-    
-                # Collect args
-                kwargs = dict(
-                    tool_name=tool,
-                    patient_id=patient_id,   # ✅ fixed (was "patient")
-                    data=data,
-                    oauth=st.session_state.get("oauth"),
-                    consent=st.session_state.get("consent"),
-                    audit=st.session_state.get("audit"),
-                    prompt=prompt,
-                )
-    
-                # Filter only supported args for registry.execute()
-                import inspect
-                sig = inspect.signature(registry.execute)
-                supported = {k: v for k, v in kwargs.items() if k in sig.parameters}
-    
-                # Simulated MCP execution
-                result: ToolCallResult = registry.execute(**supported)
-    
-                if result.ok:
-                    st.success(result.message)
-                    if result.payload:
-                        if isinstance(result.payload, (dict, list)):
-                            st.json(result.payload)
-                        else:
-                            st.write(result.payload)
-                else:
-                    st.error(result.message)
-                
-                import pandas as pd
-
-                # Ensure JSON data is always a DataFrame
-                if isinstance(data, dict):
-                    data = pd.DataFrame([data])   # wrap single dict in list
-                elif isinstance(data, list):
-                    data = pd.DataFrame(data)
-                
-                # Now it's safe to check columns
-                if data is None or data.empty or "patient_id" not in data.columns:
-                    st.warning("No patient data found, injecting demo patients...")
-                    data = pd.DataFrame([
-                        {"patient_id": "P001", "heart_rate": 80, "spo2": 97, "temp": 36.8},
-                        {"patient_id": "P002", "heart_rate": 120, "spo2": 90, "temp": 38.5},
-                    ])
-
 # -------------------- Security & Scopes --------------------
 with tabs[2]:
     section_title("OAuth (Cequence-like) Gateway — Simulated")
@@ -354,3 +268,99 @@ with tabs[5]:
     st.markdown("**MCP Tools implemented:** `get_vitals`, `check_thresholds`, `alert_doctor`")
     st.markdown("**Security:** OAuth-like token, scoped access, consent capture & replay, audit logs.")
     st.markdown("**UI:** Themed KPIs, animated badges, charts, trace IDs, and exportable logs.")
+
+# -------------------- Sidebar Toggles --------------------
+st.sidebar.markdown("---")
+st.sidebar.header("⚙️ Extra Panels")
+show_agent_console = st.sidebar.checkbox("Show Agent Console", value=False)
+show_chatbot = st.sidebar.checkbox("Show Chatbot Panel", value=False)
+
+
+# -------------------- Agent Console (Sidebar Toggle) --------------------
+if show_agent_console:
+    section_title("🤖 Agent Console (Sidebar Mode)")
+
+    registry = MCPRegistry()
+    st.markdown('<div class="vg-card">', unsafe_allow_html=True)
+
+    st.write("### Execute Tool As Agent")
+    tools = registry.list_tools()
+    tool = st.selectbox("Tool", [t["name"] for t in tools], key="sidebar_tool")
+
+    # ✅ Use DataFrame instead of dict
+    def get_patient_ids(df):
+        return df["patient_id"].unique().tolist() if not df.empty else []
+
+    valid_ids = get_patient_ids(data)
+    patient_id = st.selectbox("Patient", valid_ids, key="sidebar_agent_patient")
+    prompt = st.text_input("Agent Instruction", "Check thresholds and alert doctor if risky.", key="sidebar_prompt")
+
+    if st.button("▶️ Run (Sidebar Agent)"):
+        trace_id = str(uuid.uuid4())[:8]
+        st.write(f"Trace ID: `{trace_id}`")
+
+        kwargs = dict(
+            tool_name=tool,
+            patient_id=patient_id,
+            data=data,
+            oauth=st.session_state.get("oauth"),
+            consent=st.session_state.get("consent"),
+            audit=st.session_state.get("audit"),
+            prompt=prompt,
+        )
+
+        import inspect
+        sig = inspect.signature(registry.execute)
+        supported = {k: v for k, v in kwargs.items() if k in sig.parameters}
+
+        result: ToolCallResult = registry.execute(**supported)
+
+        if result.ok:
+            st.success(result.message)
+            if result.payload:
+                st.json(result.payload)
+        else:
+            st.error(result.message)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
+# -------------------- Chatbot Panel (Sidebar Toggle) --------------------
+if show_chatbot:
+    section_title("💬 Chatbot Panel")
+    st.markdown('<div class="vg-card">', unsafe_allow_html=True)
+
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+
+    user_input = st.text_input("Ask a question about patients", key="chat_input")
+
+    if st.button("Send", key="chat_send"):
+        if user_input:
+            # very simple heuristic "chatbot" on vitals data
+            response = "I couldn’t understand your question."
+
+            if "list patients" in user_input.lower():
+                ids = data["patient_id"].unique().tolist()
+                response = f"Patients available: {', '.join(ids)}"
+
+            elif "latest vitals" in user_input.lower():
+                pid = st.sidebar.selectbox("Pick patient", data["patient_id"].unique(), key="chat_pid")
+                latest = data[data["patient_id"] == pid].iloc[-1].to_dict()
+                response = f"Latest vitals for {pid}: {latest}"
+
+            elif "critical" in user_input.lower():
+                critical = data[(data["spo2"] < 90) | (data["heart_rate"] > 130)]
+                if not critical.empty:
+                    ids = critical["patient_id"].unique().tolist()
+                    response = f"Critical patients: {', '.join(ids)}"
+                else:
+                    response = "No patients in critical state."
+
+            st.session_state.chat_history.append({"user": user_input, "bot": response})
+
+    # show history
+    for chat in st.session_state.chat_history:
+        st.write(f"👤 {chat['user']}")
+        st.info(f"🤖 {chat['bot']}")
+
+    st.markdown('</div>', unsafe_allow_html=True)
